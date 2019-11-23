@@ -124,8 +124,9 @@ def play(env, headx, heady, mem, fruitx, fruity, network, steps):
     if debug==True:
         time.sleep(0.03)
         key=pygame.key.get_pressed()
-        if key[pygame.K_LEFT]: return -1
-        if key[pygame.K_RIGHT]: return 1
+        if key[pygame.K_LEFT]: return (int(right),out[memloc-7][timetothink-1],out[memloc-6][timetothink-1],out[memloc-5][timetothink-1],out[memloc-4][timetothink-1],out[memloc-3][timetothink-1],out[memloc-2][timetothink-1],out[memloc-1][timetothink-1],out[memloc][timetothink-1])
+        if key[pygame.K_RIGHT]:return (int(left),out[memloc-7][timetothink-1],out[memloc-6][timetothink-1],out[memloc-5][timetothink-1],out[memloc-4][timetothink-1],out[memloc-3][timetothink-1],out[memloc-2][timetothink-1],out[memloc-1][timetothink-1],out[memloc][timetothink-1])
+
         
     
     #this returns  the direction to turn in, along with a whole lot of memories. 
