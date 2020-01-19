@@ -27,12 +27,13 @@ def draw():
     pygame.display.flip()
 
 def spec(x):
-    
-    if abs(x)>6:
-        return ((numpy.arctan(x*3)**3)+(x-6))
-
+    out=numpy.zeros(x.shape)
+    for i in range(len(x)):
+        if abs(x[i])>6:
+            out[i] = ((numpy.arctan(x[i]*3)**3)+(x[i]-6))
+        else: out[i] = numpy.arctan(x[i]*3)**3
         
-    return numpy.arctan(x*3)**3
+    return out
 
 
 
@@ -40,15 +41,15 @@ def spec(x):
 
 def initagent(net):
     #fills a net with random junk.
-    net = numpy.zeros((netsize,netsize,timetothink))
+    net = numpy.zeros((timetothink,netsize,netsize))
     sense=[]
     for i in range(netsize**2):
         for j in range(timetothink):
             if i<(netsize**2)-600 or i>(netsize**2)-80:
-                net[int(i/netsize)][i%netsize][j]=((random.random()-0.5)+(random.random()-0.5)*1.6)
+                net[j][int(i/netsize)][i%netsize]=((random.random()-0.5)+(random.random()-0.5)*1.6)
             if not(i<(netsize**2)-600 or i>(netsize**2)-120):
 
-                net[int(i/netsize)][i%netsize][j]=0     
+                net[j][int(i/netsize)][i%netsize]=0     
     
     return net
 
@@ -103,7 +104,7 @@ def play(env, headx, heady, mem, fruitx, fruity, network, steps):
         view[int(i/5),i%5] = env[(int(i/5)+headx)%env_x,((i%5)+heady-1)%env_y] 
    
     sense=[]
-    out=numpy.zeros((netsize,timetothink))
+    out=numpy.zeros((timetothink,netsize))
 
 
     for i in range(len(view.flatten())):
@@ -119,38 +120,25 @@ def play(env, headx, heady, mem, fruitx, fruity, network, steps):
     sense.append(steps)
     for i in range(netsize-len(sense)):
         sense.append(1)
-    for i in range(netsize):
-        if i<len(sense):
-            out[i][0]=sense[i]
-        else:
-            out[i][0]=0
+    out[0]=sense
 
-    # the net is formated in a grid, where each node is a certain x value,
-    # and for every x value, it multiplys by a certain xy value, to add to the
-    # node[y]. then, once it goes through the entire grid, it repeats this
-    # for timetothink times, taking in the old node values, and repeating the
-    # process.
 
     
     for think in range(timetothink):
-        for x in range(netsize):
+        inter=out[think-1]
+        inter=numpy.resize(inter,(len(out[think]), len(out[think])))
 
-            for y in range(netsize):
-                  
-                out[y][think] += (network[x][y][think]*(out[x][think-1]))
-                out[y][think]=spec(out[y][think])
-                if braindisplay:
-                    color1=abs(int(network[x][y][think]*30)+128)
-                    if color1>254:
-                        color1=254
-                    color2=abs(int(out[y][think]*70)+128)
-                    if color2>254:
-                        color2=254
-                    color3=abs(int(out[x][think]*network[x][y][think]*30)+128)
-                    if color3>254:
-                        color3=254
-                    pygame.draw.rect(window, (color1, color2, color3), (((x*2)+(think*netsize*2))+gridx+think,(y*2)+gridy,2,2), 0 )
-                    
+        
+        inter=numpy.multiply(network[think],inter)
+        
+        out[think] =numpy.add(out[think],inter[0])
+        
+        out[think] = numpy.apply_along_axis(spec,0,out[think])
+    
+
+
+            
+              
     pygame.display.flip()                    
     if debug==True:
         time.sleep(0.03)
@@ -158,20 +146,22 @@ def play(env, headx, heady, mem, fruitx, fruity, network, steps):
         if key[pygame.K_LEFT]: return (int(right),out[memloc-7][timetothink-1],out[memloc-6][timetothink-1],out[memloc-5][timetothink-1],out[memloc-4][timetothink-1],out[memloc-3][timetothink-1],out[memloc-2][timetothink-1],out[memloc-1][timetothink-1],out[memloc][timetothink-1])
         if key[pygame.K_RIGHT]:return (int(left),out[memloc-7][timetothink-1],out[memloc-6][timetothink-1],out[memloc-5][timetothink-1],out[memloc-4][timetothink-1],out[memloc-3][timetothink-1],out[memloc-2][timetothink-1],out[memloc-1][timetothink-1],out[memloc][timetothink-1])
 
-    choice=numpy.argmax((out[len(out)-1][timetothink-1],out[len(out)-2][timetothink-1],out[len(out)-3][timetothink-1]))
+    choice=numpy.argmax((out[timetothink-1][len(out)-1],out[timetothink-1][len(out)-2],out[timetothink-1][len(out)-3]))
 
-    if out[len(out)-1][timetothink-1]==0 and out[len(out)-2][timetothink-1]==0 and out[len(out)-3][timetothink-1]==0:
+    output=(out[timetothink-1][memloc-7],out[timetothink-1][memloc-6],out[timetothink-1][memloc-5],out[timetothink-1][memloc-4],out[timetothink-1][memloc-3],out[timetothink-1][memloc-2],out[timetothink-1][memloc-1],out[timetothink-1][memloc])
+    
+    if out[timetothink-1 ][len(out)-1]==0 and out[timetothink-1][len(out)-2]==0 and out[timetothink-1][len(out)-3]==0:
         choice=1
         
     
     #this returns  the direction to turn in, along with a whole lot of memories. 
     if choice==0 :
 
-        return (int(right),out[memloc-7][timetothink-1],out[memloc-6][timetothink-1],out[memloc-5][timetothink-1],out[memloc-4][timetothink-1],out[memloc-3][timetothink-1],out[memloc-2][timetothink-1],out[memloc-1][timetothink-1],out[memloc][timetothink-1])
+        return numpy.append(int(right),output)
     if choice==2 :
-        return (int(left),out[memloc-7][timetothink-1],out[memloc-6][timetothink-1],out[memloc-5][timetothink-1],out[memloc-4][timetothink-1],out[memloc-3][timetothink-1],out[memloc-2][timetothink-1],out[memloc-1][timetothink-1],out[memloc][timetothink-1])
-    return (0,out[memloc-7][timetothink-1],out[memloc-6][timetothink-1],out[memloc-5][timetothink-1],out[memloc-4][timetothink-1],out[memloc-3][timetothink-1],out[memloc-2][timetothink-1],out[memloc-1][timetothink-1],out[memloc][timetothink-1])
-    
+        return numpy.append(int(left),output)
+    return numpy.append(0,output)
+            
 def stop():
 
     stopping=True
@@ -201,7 +191,7 @@ def brainsurgery(net1,neuron,layer,polar, power):
 
 def autosave(net):
 
-    f = open("ML_SNAKE.txt", 'wb', "r")
+    f = open("ML_SNAKE.txt", 'wb')
     numpy.save(f, net,allow_pickle=False)
 
 
@@ -273,7 +263,7 @@ for agents in range(agentnum):
 netdifferences=numpy.zeros(numpy.shape(netstorage))
 pastnets=numpy.zeros(numpy.shape(netstorage))
 
-netstorage[0]= load()
+#netstorage[0]= load()
 enablememory=True
 enablefruit=True
 
@@ -538,7 +528,7 @@ while not pygame.key.get_pressed()[pygame.K_t]:
 
     prev_reliability=numpy.average(numpy.greater(agentscore,numpy.zeros(len(agentscore))))
     reversion=netstorage[:]
-
+    #combines agents with a 9:1 ratio.
     if gen%10==0 or save:
         autosave(netstorage[numpy.argmax(agentscore)])
     if not retry: 
@@ -562,4 +552,4 @@ while not pygame.key.get_pressed()[pygame.K_t]:
         choice=0
         
         netstorage=netstorage2[:]
-        
+  
