@@ -538,9 +538,9 @@ while not pygame.key.get_pressed()[pygame.K_t]:
 
     prev_reliability=numpy.average(numpy.greater(agentscore,numpy.zeros(len(agentscore))))
     reversion=netstorage[:]
-    #combines agents with a 9:1 ratio.
-    #if gen%10==0 or save:
-        #autosave(netstorage[numpy.argmax(agentscore)])
+
+    if gen%10==0 or save:
+        autosave(netstorage[numpy.argmax(agentscore)])
     if not retry: 
         
         topnet=numpy.argmax(agentscore)
